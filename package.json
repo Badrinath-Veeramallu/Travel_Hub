@@ -1,0 +1,22 @@
+{
+  "name": "travel-booking-platform",
+  "version": "1.0.0",
+  "description": "Complete travel booking and comparison platform with React frontend and Express backend",
+  "scripts": {
+    "start:backend": "cd backend && npm start",
+    "start:frontend": "cd frontend && npm start",
+    "dev:backend": "cd backend && npm run dev",
+    "build:frontend": "cd frontend && npm run build"
+  },
+  "keywords": [
+    "travel",
+    "booking",
+    "flights",
+    "hotels",
+    "cars",
+    "react",
+    "express"
+  ],
+  "author": "TravelHub",
+  "license": "ISC"
+}
