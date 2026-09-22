@@ -24,13 +24,25 @@ api.interceptors.request.use(config => {
 api.interceptors.response.use(
   response => response,
   error => {
+    console.error('API Error:', error);
+    console.error('Request URL:', error.config?.url);
+    console.error('Base URL:', error.config?.baseURL);
+
     if (error.response) {
       // Server responded with a non-2xx status
-      const message = error.response.data?.error || error.response.data?.message || `Server error (${error.response.status})`;
+      const message =
+        error.response.data?.error ||
+        error.response.data?.message ||
+        `Server error (${error.response.status})`;
+
       return Promise.reject(new Error(message));
     } else if (error.request) {
-      // Request made but no response received (network/CORS issue)
-      return Promise.reject(new Error('Unable to connect to the server. Please ensure the backend is running on port 5001.'));
+      // Request sent but no response received
+      return Promise.reject(
+        new Error(
+          'Unable to reach the backend. Check the Render server, API URL, and CORS configuration.'
+        )
+      );
     } else {
       return Promise.reject(error);
     }
