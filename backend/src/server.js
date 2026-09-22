@@ -15,88 +15,94 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5001;
 
-// --------------------------------------------------
-// CORS CONFIGURATION
-// --------------------------------------------------
-
+// Allowed frontend origins
 const allowedOrigins = [
   'http://localhost:3000',
-  'http://localhost:3001',
   'http://127.0.0.1:3000',
+  'http://localhost:3001',
   'http://127.0.0.1:3001',
 
-  // Vercel frontend domains
+  // Vercel production and deployment domains
   'https://travel-hub-flax-five.vercel.app',
-  'https://travel-hub-git-main-tech-vengers.vercel.app',
-  'https://travel-6kf8c3di6-tech-vengers.vercel.app',
   'https://travel-pxt4coyrm-tech-vengers.vercel.app',
+  'https://travel-6kf8c3di6-tech-vengers.vercel.app',
 
-  // Render/frontend URL from environment variables
+  // Optional Render environment variable
   process.env.FRONTEND_URL
 ].filter(Boolean);
 
-// CORS middleware
-app.use(
-  cors({
-    origin: function (origin, callback) {
-      // Allow requests without an origin
-      // Example: Postman, curl, server-to-server requests
-      if (!origin) {
-        return callback(null, true);
-      }
+// Check whether the request origin is allowed
+const isAllowedOrigin = (origin) => {
+  if (!origin) {
+    return true;
+  }
 
-      // Allow listed origins
-      if (allowedOrigins.includes(origin)) {
-        return callback(null, true);
-      }
+  // Allow listed origins
+  if (allowedOrigins.includes(origin)) {
+    return true;
+  }
 
-      // Allow Vercel preview deployments
-      if (origin.endsWith('.vercel.app')) {
-        return callback(null, true);
-      }
+  try {
+    const url = new URL(origin);
 
-      // Allow localhost during development
-      if (
-        origin.startsWith('http://localhost:') ||
-        origin.startsWith('http://127.0.0.1:')
-      ) {
-        return callback(null, true);
-      }
+    // Allow localhost during development
+    if (
+      url.hostname === 'localhost' ||
+      url.hostname === '127.0.0.1'
+    ) {
+      return true;
+    }
 
-      console.log('Blocked CORS origin:', origin);
+    // Allow Vercel deployment and preview domains
+    if (
+      url.protocol === 'https:' &&
+      url.hostname.endsWith('.vercel.app')
+    ) {
+      return true;
+    }
+  } catch (error) {
+    return false;
+  }
 
-      return callback(new Error(`CORS not allowed for origin: ${origin}`));
-    },
+  return false;
+};
 
-    credentials: true,
+// CORS configuration
+const corsOptions = {
+  origin: (origin, callback) => {
+    if (isAllowedOrigin(origin)) {
+      callback(null, true);
+    } else {
+      console.error('Blocked CORS origin:', origin);
+      callback(new Error(`CORS not allowed for origin: ${origin}`));
+    }
+  },
 
-    methods: [
-      'GET',
-      'POST',
-      'PUT',
-      'DELETE',
-      'PATCH',
-      'OPTIONS'
-    ],
+  credentials: true,
 
-    allowedHeaders: [
-      'Content-Type',
-      'Authorization',
-      'X-Requested-With'
-    ]
-  })
-);
+  methods: [
+    'GET',
+    'POST',
+    'PUT',
+    'DELETE',
+    'PATCH',
+    'OPTIONS'
+  ],
 
-// --------------------------------------------------
-// MIDDLEWARE
-// --------------------------------------------------
+  allowedHeaders: [
+    'Content-Type',
+    'Authorization',
+    'X-Requested-With'
+  ]
+};
 
+// Apply CORS once
+app.use(cors(corsOptions));
+
+// Parse JSON request bodies
 app.use(express.json());
 
-// --------------------------------------------------
-// HEALTH CHECK ROUTES
-// --------------------------------------------------
-
+// Health check endpoints
 const healthHandler = (req, res) => {
   res.status(200).json({
     status: 'ok',
@@ -108,10 +114,6 @@ const healthHandler = (req, res) => {
 
 app.get('/health', healthHandler);
 app.get('/api/health', healthHandler);
-
-// --------------------------------------------------
-// API ROUTES
-// --------------------------------------------------
 
 // Authentication routes
 app.use('/api/auth', authRoutes);
@@ -137,22 +139,7 @@ app.use('/trips', tripRoutes);
 app.use('/api/bookings', bookingRoutes);
 app.use('/bookings', bookingRoutes);
 
-// --------------------------------------------------
-// ROOT ROUTE
-// --------------------------------------------------
-
-app.get('/', (req, res) => {
-  res.status(200).json({
-    status: 'ok',
-    message: 'TravelHub backend is running',
-    health: '/health'
-  });
-});
-
-// --------------------------------------------------
-// 404 ERROR HANDLER
-// --------------------------------------------------
-
+// 404 handler
 app.use((req, res) => {
   res.status(404).json({
     error: `Route not found: ${req.method} ${req.url}`,
@@ -160,10 +147,7 @@ app.use((req, res) => {
   });
 });
 
-// --------------------------------------------------
-// GLOBAL ERROR HANDLER
-// --------------------------------------------------
-
+// Global error handler
 app.use((err, req, res, next) => {
   console.error('Server Error:', err.stack || err.message);
 
@@ -173,14 +157,19 @@ app.use((err, req, res, next) => {
   });
 });
 
-// --------------------------------------------------
-// START SERVER
-// --------------------------------------------------
-
+// Start server
 app.listen(PORT, () => {
-  console.log(`TravelHub backend running on port ${PORT}`);
-  console.log(`Health check: http://localhost:${PORT}/health`);
   console.log(
-    `Frontend URL: ${process.env.FRONTEND_URL || 'Not configured'}`
+    `✈️ Travel Booking API server running on port ${PORT}`
+  );
+
+  console.log(
+    `📡 Health check available at: http://localhost:${PORT}/health`
+  );
+
+  console.log(
+    `🌐 Frontend URL: ${
+      process.env.FRONTEND_URL || 'Not configured'
+    }`
   );
 });
